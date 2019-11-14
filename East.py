@@ -5,7 +5,7 @@ import json
 import re
 
 TOKEN = "NjQxMDkzMjQ2MDkyNzA1ODE0.XcDXtw.LsC7erHW4CDPYccaj0FVq16Y-oY"
-cogs = ['cogs.commands', 'cogs.dev_commands', 'cogs.admin_commands']
+LOAD_COGS = ['cogs.commands', 'cogs.dev_commands', 'cogs.admin_commands']
 
 with open ("data_storage.json", "r") as file: 
     data = json.load(file)
@@ -33,7 +33,7 @@ class East (commands.Bot):
 
 bot = East("&")
 
-for cog in cogs:
+for cog in LOAD_COGS:
     bot.load_extension(cog)
 
 bot.run(TOKEN)
