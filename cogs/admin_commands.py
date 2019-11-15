@@ -27,7 +27,7 @@ class AdminCommands(commands.Cog):
         if len(dataIndex) and ctx.author.guild_permissions.administrator:
             return True
 
-    @commands.command()
+    @commands.command(description = "Adds an admin to the guild list.")
     @commands.guild_only()
     async def addAdmin(self, ctx, user: discord.User):
         dataIndex = data[str(ctx.guild.id)]["admin_ids"]
@@ -49,7 +49,7 @@ class AdminCommands(commands.Cog):
         except: 
             await ctx.send("Please submit a valid admin name.")
     
-    @commands.command(aliases = ["rmAdmin"])
+    @commands.command(aliases = ["rmAdmin"], description = "Removes an admin from the guild list.")
     @commands.guild_only()
     async def removeAdmin(self, ctx, user: discord.User):
         #remove admin and add admin use the same search functionality. streamline it.   
@@ -70,7 +70,7 @@ class AdminCommands(commands.Cog):
         except: 
             await ctx.send("Please submit a valid admin name.")
     
-    @commands.command()
+    @commands.command(description = "Sets the permissions for a guild.")
     @commands.guild_only() 
     async def setPerms(self, ctx, param, arg:bool): 
         dataIndex = data[str(ctx.guild.id)]
@@ -85,7 +85,7 @@ class AdminCommands(commands.Cog):
         except: 
             await ctx.send("Please submit a valid permission name and a true/false variable.")
     
-    @commands.command()
+    @commands.command(description = "Shows the permissions for a guild.")
     @commands.guild_only()
     async def showPerms(self, ctx):
         perms_out = ""
@@ -94,7 +94,7 @@ class AdminCommands(commands.Cog):
                 perms_out += (str(item) + " : " + str(data[str(ctx.guild.id)][item]) + "\n")
         await ctx.send("```" + perms_out + "```")
 
-    @commands.command()
+    @commands.command(description = "Removes x amount of messages from the channel.")
     @commands.guild_only()
     async def purge(self, ctx, lim): 
         await ctx.channel.purge(limit = int(lim))

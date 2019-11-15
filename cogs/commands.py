@@ -1,5 +1,6 @@
 import discord 
 import random
+import DiscordUtils as dutils
 from discord.ext import commands
 
 class Commands (commands.Cog):
@@ -16,7 +17,7 @@ class Commands (commands.Cog):
             result += float(item)
         await ctx.send(result)
 
-    @commands.command(description = "Choose between different options")
+    @commands.command(description = "Choose between different options.")
     async def choose(self, ctx, *, arg): 
         """Choose between any arguments, using ``&choose a, b, c...``. Separate choices with a comma."""
         res_array = arg.split(ctx.bot.SPLIT_CHAR)
@@ -32,19 +33,33 @@ class Commands (commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name = "help", hidden = True)
-    async def help(self, ctx, cog): 
+    async def help(self, ctx, *, cog = None):
         if not cog:  
-            embed = discord.Embed(title = "Help", description = "Hello! I'm East. Below are my commands. If you'd like to list a certain category, type ``&help category`` to bring it up.")
+            embed = discord.Embed(title = "Help", description = "Hello! I'm East. Below are my commands. If you'd like to list a certain category, type ``&help category`` to bring it up.", color = 0xff0000)
             await ctx.send(embed = embed)
         else: 
+            cog = dutils.case(cog, True) 
             cog_list = ["commands", "devcommands", "admincommands"]
-            if (cog.lower()) in cog_list: 
-                await ctx.send("Here")
-                embed = discord.Embed(title = "East Help", description = self.bot.get_cog(cog).description, color = 0xff0000)
-                for cItem in self.bot.get_cog(cog).get_commands(): 
-                    if not cItem.hidden: 
+            command_list = []
+            split_cog = cog.split(" ")
+            if split_cog[0].lower() in cog_list: 
+                embed = discord.Embed(title = "East Help", description = self.bot.get_cog(split_cog[0]).description, color = 0xff0000)
+                for cItem in self.bot.get_cog(split_cog[0]).get_commands(): 
+                    if len(split_cog) > 1: 
+                        print("HERE")
+                        command_list.append(cItem.name)
+                    elif not cItem.hidden and len(split_cog) < 2: 
                         embed.add_field(name = cItem.name, value = cItem.description, inline = False)
+                for clItem in command_list: 
+                    if clItem == split_cog[1]: 
+                        #figure out how to pass in the .help value from clItem. it's not 
+                        #just clItem because that's only the name, not the actual 
+                        #command item. Figure out how to retrieve the command item from 
+                        #the above code.
+                        embed.add_field(name = clItem, value = , inline = False)
                 await ctx.send(embed = embed)
+                print(command_list)
+            
 def setup(bot):  
     bot.remove_command("help")
     bot.add_cog(Commands(bot))  

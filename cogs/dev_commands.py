@@ -1,6 +1,7 @@
 import discord
 import re
 import random
+import DiscordUtils as dutils
 import importlib
 from discord.ext import commands
 
@@ -11,7 +12,7 @@ class DevCommands (commands.Cog):
     def cog_check(self, ctx): 
         return ctx.author.id in ctx.bot.DEV_IDS
 
-    @commands.command(name = 'eval')
+    @commands.command(name = 'eval', hidden = True)
     async def evalCode (self, ctx, *, arg): 
         try: 
             result = str(eval(arg))
@@ -21,7 +22,7 @@ class DevCommands (commands.Cog):
         except Exception as e: 
             await ctx.send(f"Program failed with {type(e).__name__}: {e}")
     
-    @commands.command(name = 'stop')
+    @commands.command(name = 'stop', hidden = True)
     async def stop(self, ctx): 
         randomNum = random.randrange(0,50)
         cereal_array = ["Cookie crisp!", "Frootloops!", "Reese's Puffs!", "Trix!", "Rice Krispee's!", "Apple Jacks!"]
@@ -31,13 +32,15 @@ class DevCommands (commands.Cog):
             await ctx.send(random.choice(cereal_array))
         await self.bot.logout()
     
-    @commands.command(name = 'reload')
+    @commands.command(name = 'reload', hidden = True)
     async def reload(self, ctx, module):
+        if not '_' in module: 
+            module = dutils.snake_case(module, False, False)
         if "cogs." in module:
             await ctx.send(module + " reloaded.")
             self.bot.reload_extension(module)
         else: 
-            await ctx.send(module + ".cogs reloaded.")
+            await ctx.send("cogs." + module + " reloaded.")
             self.bot.reload_extension("cogs." + module)
 
     
