@@ -7,6 +7,7 @@ with open ("data_storage.json", "r") as file:
 
 
 class AdminCommands(commands.Cog): 
+    """Designed for administrator use. If there isn't an assigned list of admins, defaults to anyone with admin privileges."""
     def __init__(self, bot): 
         self.bot = bot
     

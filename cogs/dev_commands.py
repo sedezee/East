@@ -6,6 +6,8 @@ import importlib
 from discord.ext import commands
 
 class DevCommands (commands.Cog):
+    """For dev use only"""
+    
     def __init__(self, bot): 
         self.bot = bot
     
