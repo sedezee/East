@@ -5,7 +5,6 @@ import json
 import re
 
 TOKEN = "NjQxMDkzMjQ2MDkyNzA1ODE0.XcDXtw.LsC7erHW4CDPYccaj0FVq16Y-oY"
-LOAD_COGS = ['cogs.commands', 'cogs.dev_commands', 'cogs.admin_commands']
 
 with open ("data_storage.json", "r") as file: 
     data = json.load(file)
@@ -13,6 +12,7 @@ with open ("data_storage.json", "r") as file:
 class East (commands.Bot):
 
     SPLIT_CHAR = ','
+    LOAD_COGS = ['cogs.commands', 'cogs.dev_commands', 'cogs.admin_commands']
     DEV_IDS = [199856712860041216, 101091070904897536]
     PERMS_LIST = ["show_admins"]
     #BOT LOGS
@@ -29,15 +29,10 @@ class East (commands.Bot):
             json.dump(data, file)
 
         
-#bot.get_cog("Commands")
 
 bot = East("&")
 
-for cog in LOAD_COGS:
+for cog in bot.LOAD_COGS:
     bot.load_extension(cog)
 
 bot.run(TOKEN)
-
-
-
-#todo: create own version of paginated

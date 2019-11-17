@@ -46,7 +46,7 @@ class Commands (commands.Cog):
             else: 
                 arg_split = arg.split(" ")
                 for cItem in self.bot.get_cog(item).get_commands():
-                    if len(arg_split) < 2 and arg_split[0] == item and not cItem.hidden:
+                    if len(arg_split) < 2 and arg_split[0] == item and (not cItem.hidden or ctx.author.id in ctx.bot.DEV_IDS):
                         found = True
                         embed.description = self.bot.get_cog(item).description
                         embed.add_field(name = cItem.name, value = cItem.description, inline = False) 
