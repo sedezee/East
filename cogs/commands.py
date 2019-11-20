@@ -2,6 +2,10 @@ import discord
 import random
 import DiscordUtils as dutils
 from discord.ext import commands
+import json
+
+with open ("data_storage.json", "r") as file: 
+    data = json.load(file)
 
 class Commands (commands.Cog):
     """These commands are for general use and can be used by anyone."""
@@ -64,6 +68,15 @@ class Commands (commands.Cog):
             await ctx.send("No such command found. Please use the ``&help [category] [command]`` or ``&help [command]`` format.")
         else: 
             await ctx.send(embed = embed)
+
+    @commands.command()
+    async def time(self, ctx): 
+        time_zone = data[str(ctx.guild.id)]["options"]["time_zone"]
+        military_time = data[str(ctx.guild.id)]["options"]["military_time"]
+        time_list = dutils.get_time(time_zone, military_time, True)
+        if time_list[2] < 10: 
+            time_list[2] = "0" + str(time_list[2])
+        await ctx.send(f"The time is {time_list[0]}:{time_list[1]}:{time_list[2]}!")
 
 
 def setup(bot):  

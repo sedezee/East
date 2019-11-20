@@ -14,6 +14,7 @@ class DevCommands (commands.Cog):
     def cog_check(self, ctx): 
         return ctx.author.id in ctx.bot.DEV_IDS
 
+
     @commands.command(name = 'eval', hidden = True, description = "Evaluate!")
     async def evalCode(self, ctx, *, arg): 
         """Evaluate some code. Probably won't do anything terrible."""
@@ -59,7 +60,6 @@ class DevCommands (commands.Cog):
             if cog in short_cog: 
                 for index, item in enumerate(short_cog): 
                     if (cog == item):
-                        print(ctx.bot.LOAD_COGS[index])
                         self.bot.reload_extension(ctx.bot.LOAD_COGS[index])
                         await ctx.send(ctx.bot.LOAD_COGS[index] + " reloaded.")
                         
