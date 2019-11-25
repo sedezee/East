@@ -105,7 +105,7 @@ class AdminCommands(commands.Cog):
         """Sets a specific option to a new value. ``&options set [option] [value]``."""
         param = param.lower()
         opt_list = ctx.bot.OPTIONS_LIST
-        if param in opt_li  st.keys():
+        if param in opt_list.keys():
             if(isinstance(arg, opt_list[param])):  
                 data[str(ctx.guild.id)]["options"][param] = arg
                 await ctx.send(f"{param} set to {arg}.")
