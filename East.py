@@ -18,8 +18,10 @@ class East (commands.Bot):
     OPTIONS_LIST = {
         "show_admins" : bool, 
         "time_zone" : time_zone.TimeZone,
-        "military_time" : bool
+        "military_time" : bool,
+        "prefix" : str
     }
+
     #BOT LOGS
     async def on_ready(self): 
         print('Logged in as ')
@@ -34,13 +36,17 @@ class East (commands.Bot):
         data[str(guild.id)]["options"]["show_admins"] = True
         data[str(guild.id)]["options"]["time_zone"] = "UTC"
         data[str(guild.id)]["options"]["military_time"] = False
-        
+        data[str(guild.id)]["options"]["prefix"] = "&"
         with open("data_storage.json", "w") as file: 
             json.dump(data, file)
 
         
+def getPrefix(self, ctx): 
+    with open ("data_storage.json", "r") as file: 
+        data = json.load(file)
+    return data[str(ctx.guild.id)]["options"]["prefix"]
 
-bot = East("&")
+bot = East(command_prefix = getPrefix)
 
 for cog in bot.LOAD_COGS:
     bot.load_extension(cog)
