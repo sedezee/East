@@ -5,9 +5,6 @@ import time_zone
 from discord.ext import commands
 import json
 
-with open ("data_storage.json", "r") as file: 
-    data = json.load(file)
-
 class AdminCommands(commands.Cog): 
     """Designed for administrator use. If there isn't an assigned list of admins, defaults to anyone with admin privileges."""
     def __init__(self, bot): 
@@ -15,7 +12,7 @@ class AdminCommands(commands.Cog):
     
     #todo: write add_admin command tomorrow
     def cog_check(self, ctx): 
-        dataIndex = data[str(ctx.guild.id)]["admin_ids"]
+        dataIndex = self.bot.data[str(ctx.guild.id)]["admin_ids"]
 
         if ctx.guild.id is None: 
             return True
@@ -36,11 +33,11 @@ class AdminCommands(commands.Cog):
         if ctx.invoked_subcommand is None: 
             await ctx.send("Options are ``list``/``show``, ``add``, and ``remove``.")
     
-    @admins.command(aliases = ["list", "show"], description = "Shows the admins on the guild list.")
+    @admins.command(name = "show", aliases = ["list"], description = "Shows the admins on the guild list.")
     @commands.guild_only() 
     async def _adm_show(self, ctx):
         """Shows a list of admins in the current guild. ``&options show`` or ``&options list``"""
-        dataIndex = data[str(ctx.guild.id)]["admin_ids"]
+        dataIndex = self.bot.data[str(ctx.guild.id)]["admin_ids"]
         admins = "```The admins are: \n"
 
         for item in dataIndex: 
@@ -53,7 +50,7 @@ class AdminCommands(commands.Cog):
     @commands.guild_only()
     async def _adm_add(self, ctx, user: discord.User): 
         """Removes an admin from the guild list. ``&admins add @[admin]``"""
-        dataIndex = data[str(ctx.guild.id)]["admin_ids"]
+        dataIndex = self.bot.data[str(ctx.guild.id)]["admin_ids"]
         try:
             if user.id in dataIndex: 
                 await ctx.send(user.mention + " is already an administrator.")
@@ -61,7 +58,7 @@ class AdminCommands(commands.Cog):
                 dataIndex.append(user.id)
                 await ctx.send(user.mention + " added as an administrator!") 
             with open("data_storage.json", "w") as file: 
-                json.dump(data, file)
+                json.dump(self.bot.data, file)
         except: 
             await ctx.send("Please submit a valid admin name.")
 
@@ -70,7 +67,7 @@ class AdminCommands(commands.Cog):
     async def _adm_remove(self, ctx, user: discord.User):
         """Removes an admin from the guild list. ``&admins remove @[admin]``"""
         #remove admin and add admin use the same search functionality. streamline it.   
-        dataIndex = data[str(ctx.guild.id)]["admin_ids"]
+        dataIndex = self.bot.data[str(ctx.guild.id)]["admin_ids"]
         try: 
             if not user.id in dataIndex:
                 await ctx.send(user.mention + " is not an administrator.")
@@ -78,7 +75,7 @@ class AdminCommands(commands.Cog):
                 await ctx.send(user.mention + " removed.")
                 dataIndex.remove(user.id)
             with open("data_storage.json", "w") as file: 
-                json.dump(data, file)
+                json.dump(self.bot.data, file)
         except: 
             await ctx.send("Please submit a valid admin name.")
 
@@ -96,7 +93,7 @@ class AdminCommands(commands.Cog):
         opt_out = ""
         for item in ctx.bot.OPTIONS_LIST.keys():
             opt_out += ("{0} : {1} \n"
-                .format(str(item), str(data[str(ctx.guild.id)]["options"][item])))
+                .format(str(item), str(self.bot.data[str(ctx.guild.id)]["options"][item])))
         await ctx.send(f"```{opt_out}```")
 
     @options.command(name = "set", description = "Sets an option to a new value.")
@@ -107,7 +104,7 @@ class AdminCommands(commands.Cog):
         opt_list = ctx.bot.OPTIONS_LIST
         if param in opt_list.keys():
             if(isinstance(arg, opt_list[param])):  
-                data[str(ctx.guild.id)]["options"][param] = arg
+                self.bot.data[str(ctx.guild.id)]["options"][param] = arg
                 await ctx.send(f"{param} set to {arg}.")
             else: 
                 await ctx.send(f"{arg} is not the right type of argument for {param}.")
@@ -115,7 +112,7 @@ class AdminCommands(commands.Cog):
             await ctx.send(f"{param} is not an option. To see options, type &options show.")
         
         with open("data_storage.json", "w") as file: 
-            json.dump(data, file)
+            json.dump(self.bot.data, file)
     
     @options.command(name = "default", description = "Returns all options to the default.")
     @commands.guild_only()
@@ -126,9 +123,9 @@ class AdminCommands(commands.Cog):
         ``military_time`` to False
         ``Prefix`` to &
         """
-        data[str(ctx.guild.id)]["options"]["show_admins"] = True
-        data[str(ctx.guild.id)]["options"]["time_zone"] = "UTC"
-        data[str(ctx.guild.id)]["options"]["military_time"] = False
+        self.bot.data[str(ctx.guild.id)]["options"]["show_admins"] = True
+        self.bot.data[str(ctx.guild.id)]["options"]["time_zone"] = "UTC"
+        self.bot.data[str(ctx.guild.id)]["options"]["military_time"] = False
         await ctx.send("All options set to default.")            
     
     @commands.command(description = "Removes x amount of messages from the channel.")

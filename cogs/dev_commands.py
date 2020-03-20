@@ -26,7 +26,7 @@ class DevCommands (commands.Cog):
         except Exception as e: 
             await ctx.send(f"Program failed with {type(e).__name__}: {e}")
     
-    @commands.command(name = 'exec', hidden = True, description = "Execuate!")
+    @commands.command(name = 'exec', hidden = True, description = "Execute!")
     async def execCode(self, ctx, *, arg):
         """Execute some code. Will DEFINITELY do something terrible."""
         try: 
@@ -47,21 +47,22 @@ class DevCommands (commands.Cog):
     
     @commands.command(name = 'reload', hidden = True, description = "Reload a cog.")
     async def reload(self, ctx, cog = None):
-        short_cog = ['c', 'dc', 'ac']
+        short_cog = ['c', 'dc', 'ac', 'jc']
+        cog_list = ["cogs.commands", "cogs.dev_commands", "cogs.admin_commands", "cogs.joke_commands"]
         if not cog: 
             for cogs in ctx.bot.LOAD_COGS: 
-                self.bot.reload_extension(cogs)
+                self.bot.reload_extension("cogs." + cogs)
             await ctx.send("All cogs reloaded.")
         else:
             if not '_' in cog: 
-                cog = dutils.snake_case(cog, False, False)
+                cog = dutils.snake_case(cog, True)
             if not "cogs." in cog and not cog in short_cog: 
                 cog = "cogs." + cog
             if cog in short_cog: 
                 for index, item in enumerate(short_cog): 
                     if (cog == item):
-                        self.bot.reload_extension(ctx.bot.LOAD_COGS[index])
-                        await ctx.send(ctx.bot.LOAD_COGS[index] + " reloaded.")
+                        self.bot.reload_extension(cog_list[index])
+                        await ctx.send(cog_list[index] + " reloaded.")
                         
             elif cog in ctx.bot.LOAD_COGS:
                 self.bot.reload_extension(cog)

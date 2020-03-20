@@ -16,18 +16,18 @@ def case(str_input, first_cap):
     else: 
         print("Please input a string and a boolean.")
 
-def snake_case(str_input, cap, first_cap): 
-    if isinstance(str_input, str) and isinstance(cap, bool): 
-        div = ("admin", "dev")
-        str_input = str_input.lower() 
+def snake_case(str_input, to_snake): 
+    div = ("admin", "dev")
+    str_input = str_input.lower() 
+
+    if isinstance(str_input, str) and isinstance(to_snake, bool) and to_snake: 
         for item in div: 
             if item in str_input:
                 str_input = str_input.replace(item, item + "_")
-        if cap and first_cap: 
-            str_input = case(str_input, True)
-        elif cap and not first_cap: 
-            str_input = case(str_input, False)
         return str_input
+    elif isinstance(str_input, str) and isinstance(to_snake, bool) and not to_snake and '_' in str_input:
+        return str_input.replace('_', '')
+
     else: 
         print("Please input a string and two booleans")
 
@@ -246,6 +246,7 @@ def get_time(time_zone, military_time, return_time):
     if isinstance(military_time, str): 
         military_time = False
 
+    time_zone = str(time_zone)
     time_zone = time_zone.upper()
     local_time = time.gmtime(time.time())
 
@@ -289,3 +290,22 @@ def to_time_zone(arg):
         arg = arg
     
     return arg
+
+# def color_converter(arg): 
+#     arg_split = list(arg)
+#     hex = False
+#     if arg_split[0] == "#": 
+#         arg = arg.replace("#", "")
+#         arg_split = list(arg)
+#         hex = True 
+#     elif len(arg_split) == 6: 
+#         hex = True 
+
+#     if hex: 
+#         return int(arg, 16)
+#     else: 
+#         arg_split = arg.split(" ")
+#         hexVal = '{:02x}{:02x}{:02x}'.format(int(arg[0]), int(arg[1]), int(arg[2]))
+#         return int(hexVal, 16)
+
+ 
