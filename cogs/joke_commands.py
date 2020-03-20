@@ -13,7 +13,7 @@ class JokeCommands(commands.Cog):
         """East performs a favor for a certain someone, and ONLY that someone."""
         if ctx.author.id != 199965612691292160:
             await ctx.send("Excuse me?")
-            return
+            return 
          
         await asyncio.sleep(1)
         async with ctx.typing(): 
