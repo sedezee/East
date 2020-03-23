@@ -21,10 +21,10 @@ def floating_role(role):
 
 def command_null_check(self, ctx, command, embed, help = False):
     if command.description != None and command.help != None and help: 
-        embed.description = (command.description).replace("&", self.bot.data[str(ctx.guild.id)]["options"]["prefix"])
-        embed.add_field(name = command, value = (command.help).replace("&", self.bot.data[str(ctx.guild.id)]["options"]["prefix"]), inline = False)
+        embed.description = (command.description).replace("&", ctx.prefix)
+        embed.add_field(name = command, value = (command.help).replace("&", ctx.prefix), inline = False)
     elif command.description != None and not help: 
-        embed.add_field(name = command, value = (command.description).replace("&", self.bot.data[str(ctx.guild.id)]["options"]["prefix"]), inline = False)
+        embed.add_field(name = command, value = (command.description).replace("&", ctx.prefix), inline = False)
     else: 
         embed.add_field(name = command, value = "", inline = False)
 #TODO: Replace extraneous portions with command_null_check 
@@ -145,7 +145,7 @@ class Commands(commands.Cog):
                                         
                         else: 
                             embed.description = cItem.description
-                            embed.add_field(name = cItem, value = (cItem.help).replace("&", self.bot.data[str(ctx.guild.id)]["options"]["prefix"]), inline = False)
+                            embed.add_field(name = cItem, value = (cItem.help).replace("&", ctx.prefix), inline = False)
         if not found: 
             await ctx.send("No such command found. Please use the ``&help [category] [command]`` or ``&help [command]`` format.")
         else: 
@@ -153,10 +153,68 @@ class Commands(commands.Cog):
 
     @commands.group(description = "Registers a virtual scoreboard for the server. Points may be given at will.", invoke_without_command = True)
     @commands.guild_only()
-    async def scoreboard(self, ctx):
+    async def scoreboard(self, ctx, page_num):
         """Shows the scoreboard for the server."""
-        return 
+        scoreboard_data = self.bot.data[str(ctx.guild.id)]["scoreboard"]
+        embed = discord.Embed(title = "Scoreboard", color = 0xff0000)
+        entries = 10
+        pages = int(len(scoreboard_data)/entries)
+        if page_num > pages: 
+            await ctx.send("Your page number is too high, so I'm just giving you the last page!")
+            page_num = pages
+
+        
+        # 1 + 0 -> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+        # 2 + 2/2 * 10 -> 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+        # 3 * 10 -10  
     
+    @scoreboard.command(name = "givePoints", description = "Awards a user any number of points.")
+    async def _givePoints(self, ctx, user: typing.Union[discord.User, None], point_num: typing.Union[int, None]):
+        """Gives a specified user any number of specified points. Format is ``&scoreboard givePoints @user number_points``."""
+        sign = ctx.prefix
+        scoreboard_data = self.bot.data[str(ctx.guild.id)]["scoreboard"]
+        scoreboard_limit = self.bot.data[str(ctx.guild.id)]["options"].get("scoreboard_pl")
+        if user != None and point_num != None: 
+            if point_num > scoreboard_limit: 
+                await ctx.send(f"Sorry, that's above your servers limit of {scoreboard_limit} points! Please choose a smaller number.")
+            else:
+                if user.id in scoreboard_data: 
+                    scoreboard_data[user.id ] = int(scoreboard_data.get(user.id)) + point_num
+                else:
+                    scoreboard_data[user.id] = point_num
+                    
+                await ctx.send(f"{point_num} points given to {user.mention}!")
+
+        else: 
+            await ctx.send(f"Something went wrong! Check to make sure that your formatting is ``{sign}scoreboard givePoints @User number_points``")
+        
+        with open("data_storage.json", "w") as file: 
+            json.dump(self.bot.data, file)
+
+    @scoreboard.command(name = "givePoint", description = "Gives a specified user one point.")
+    async def _givePoint(self, ctx, user: typing.Union[discord.User, None]):
+        """Gives a user a single point. Formatting is: ``&givePoint @User``."""
+        scoreboard_data = self.bot.data[str(ctx.guild.id)]["scoreboard"]
+        sign = ctx.prefix
+        if user != None: 
+            if user.id in scoreboard_data: 
+                scoreboard_data[user.id] = int(scoreboard_data.get(user.id)) + 1
+            else: 
+                scoreboard_data[user.id] = 1
+        else: 
+            await ctx.send(f"Something went wrong! Check to make sure that your formatting is ``{sign}scoreboard givePoints @User number_of_points``")
+
+        with open("data_storage.json", "w") as file: 
+            json.dump(self.bot.data, file)
+        
+    @scoreboard.command(name = "clear")
+    async def _clear(self, ctx): 
+        """Deletes all of the saved scoreboard data for the server."""
+        self.bot.data[str(ctx.guild.id)]["scoreboard"] = {}
+        with open("data_storage.json", "w") as file: 
+            json.dump(self.bot.data, file)
+        
+
     @commands.command(description = "Returns the time for the set timezone.")
     async def time(self, ctx, time_zone_var = None): 
         """Returns the time for the current timezone, which can be set in timezones. Used with ``&time``"""
@@ -179,7 +237,7 @@ class Commands(commands.Cog):
 
     @commands.command(description = "Gives the time to a certain date.")
     async def timeUntil(self, ctx, unit = "days", month = 0, day = 0, year = 0):
-        """Returns the time until a specific date in format ``unit month day year``. Unit may be represented as days, or weeks. Months and years are not currently supported."""
+        """Returns the time until a specific date. Format to trigger is ``&unit month day year``. Unit may be represented as days, or weeks. Months and years are not currently supported."""
         current_date = datetime.datetime.now()
         to_date = datetime.datetime(year = year, month = month, day = (day + 1))
         time_delta = to_date - current_date

@@ -5,7 +5,7 @@ import time_zone
 import json
 import re
 
-TOKEN = ""
+TOKEN = "MzM5MTE5MDY5MDY2Mjk3MzU1.XnKyRQ.GDF5OpW0I9ubNlOeYvbBUN-Crs4"
 
 
 class East (commands.Bot):
@@ -34,10 +34,18 @@ class East (commands.Bot):
         bot.data[str(guild.id)] = {}
         bot.data[str(guild.id)]["admin_ids"] = []
         bot.data[str(guild.id)]["options"] = {}
+        bot.data[str(guild.id)]["scoreboard"] = {}
         bot.data[str(guild.id)]["options"]["show_admins"] = True
         bot.data[str(guild.id)]["options"]["time_zone"] = "UTC"
         bot.data[str(guild.id)]["options"]["military_time"] = False
         bot.data[str(guild.id)]["options"]["prefix"] = "&"
+        bot.data[str(guild.id)]["options"]["scoreboard_pl"] = 100
+        with open("data_storage.json", "w") as file: 
+            json.dump(bot.data, file)
+            data = json.load(file)
+    
+    async def on_guild_remove(self, guild): 
+        bot.data.pop(str(guild.id)) 
         with open("data_storage.json", "w") as file: 
             json.dump(bot.data, file)
             data = json.load(file)
