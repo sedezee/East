@@ -99,57 +99,7 @@ class Commands(commands.Cog):
         embed.add_field(name = "test1", value = "testing1", inline = False)
         embed.add_field(name = "test5", value = "testing2", inline = True)
         embed.add_field(name = "test4", value = "testing 3", inline = True)
-        await ctx.send(embed=embed)
-            
-    @commands.command(hidden = True, description = "The help command")
-    async def help(self, ctx, *, arg = None):
-        """The help command."""
-        #Please note that the below is not the suggested way to execute 
-        #a help command. I wrote the help command the way I did for the learning
-        #experience and nothing more. If you are looking at East for a reference, 
-        #know that this part of the code is not recommended for that purpose. 
-        arg = dutils.case(arg, True)
-        found = False
-        embed = discord.Embed(title = "Help", color = 0xff0000)
-        cog_list = ["Commands", "DevCommands", "AdminCommands", "JokeCommands"]
-
-        for item in cog_list: 
-            if not arg:
-                found = True
-                cog = self.bot.get_cog(item)
-                embed.add_field(name = item, value = cog.description, inline = False)
-            else: 
-                arg_split = arg.split(" ")
-                for cItem in self.bot.get_cog(item).get_commands():
-                    #search through every command
-                    if arg_split[-1].lower() == str(item).lower() and not cItem.hidden:
-                        #if the last element of the user input equals a cog and it is not hidden, add every command in said cog
-                        found = True 
-                        embed.description = self.bot.get_cog(item).description
-                        embed.add_field(name = cItem.name, value = cItem.description, inline = False) 
-                    elif (arg_split[-1].lower() == str(cItem).lower() or arg_split[0].lower() == str(cItem).lower()) and not cItem.hidden:
-                        #otherwise, if the last element of user input is equal to an item in the cog OR the first item is equivilent to an item in the cog 
-                        found = True
-                        if isinstance(cItem, commands.core.Group):
-                            #if that command is a group
-                            found_commands = []
-                            run = True
-                            for aItem in ctx.bot.all_commands[arg_split[0].lower()].all_commands.values(): 
-                                if len(arg_split) == 1 and not aItem in found_commands:
-                                    found_commands.append(aItem)
-                                    embed.description = cItem.description
-                                    command_null_check(self, ctx, aItem, embed)
-                                elif len(arg_split) > 1 and aItem.name.lower() == arg_split[1].lower() and run and aItem.parent.name.lower() == arg_split[0].lower():
-                                    run = False
-                                    command_null_check(self, ctx, aItem, embed, True)
-                                        
-                        else: 
-                            embed.description = cItem.description
-                            embed.add_field(name = cItem, value = (cItem.help).replace("&", ctx.prefix), inline = False)
-        if not found: 
-            await ctx.send("No such command found. Please use the ``&help [category] [command]`` or ``&help [command]`` format.")
-        else: 
-            await ctx.send(embed = embed)
+        await ctx.send(embed=embed) 
 
     @commands.group(description = "Registers a virtual scoreboard for the server. Points may be given at will.", invoke_without_command = True)
     @commands.guild_only()
@@ -161,28 +111,21 @@ class Commands(commands.Cog):
         pages = int(len(scoreboard_data)/entries)
         if page_num > pages: 
             await ctx.send("Your page number is too high, so I'm just giving you the last page!")
-            page_num = pages
-
-        
-        # 1 + 0 -> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
-        # 2 + 2/2 * 10 -> 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
-        # 3 * 10 -10  
+            page_num = pages 
     
     @scoreboard.command(name = "givePoints", description = "Awards a user any number of points.")
-    async def _givePoints(self, ctx, user: typing.Union[discord.User, None], point_num: typing.Union[int, None]):
+    async def _givePoints(self, ctx, user: typing.Union[discord.User, None], point_num: typing.Union[int]):
         """Gives a specified user any number of specified points. Format is ``&scoreboard givePoints @user number_points``."""
         sign = ctx.prefix
         scoreboard_data = self.bot.data[str(ctx.guild.id)]["scoreboard"]
         scoreboard_limit = self.bot.data[str(ctx.guild.id)]["options"].get("scoreboard_pl")
+
         if user != None and point_num != None: 
             if point_num > scoreboard_limit: 
                 await ctx.send(f"Sorry, that's above your servers limit of {scoreboard_limit} points! Please choose a smaller number.")
             else:
-                if user.id in scoreboard_data: 
-                    scoreboard_data[user.id ] = int(scoreboard_data.get(user.id)) + point_num
-                else:
-                    scoreboard_data[user.id] = point_num
-                    
+                print("AAAA")
+                user_data = dict(filter(lambda user_item: user_item['user'] == str(user.id), scoreboard_data))
                 await ctx.send(f"{point_num} points given to {user.mention}!")
 
         else: 
@@ -286,5 +229,5 @@ class Commands(commands.Cog):
 
 
 def setup(bot):  
-    bot.remove_command("help")
+    #bot.remove_command("help")
     bot.add_cog(Commands(bot))  

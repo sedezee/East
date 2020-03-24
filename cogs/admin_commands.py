@@ -126,7 +126,13 @@ class AdminCommands(commands.Cog):
         self.bot.data[str(ctx.guild.id)]["options"]["show_admins"] = True
         self.bot.data[str(ctx.guild.id)]["options"]["time_zone"] = "UTC"
         self.bot.data[str(ctx.guild.id)]["options"]["military_time"] = False
-        await ctx.send("All options set to default.")            
+        self.bot.data[str(ctx.guild.id)]["options"]["scoreboard_pl"] = 100
+        self.bot.data[str(ctx.guild.id)]["options"]["prefix"] = "&"
+
+        with open("data_storage.json", "w") as file: 
+            json.dump(self.bot.data, file)
+            
+        await ctx.send("All options set to default, including the prefix.")            
     
     @commands.command(description = "Removes x amount of messages from the channel.")
     @commands.guild_only()

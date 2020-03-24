@@ -1,9 +1,10 @@
 import time 
 import time_zone
+import discord
 
 def case(str_input, first_cap): 
     if isinstance(str_input, str) and isinstance(first_cap, bool):
-        caseChange = ("Admin", "Dev", "Command")
+        caseChange = ("Admin", "Dev", "Joke", "Command")
         str_input = str_input.lower()
         for item in caseChange: 
             if item.lower() in str_input: 
@@ -17,7 +18,7 @@ def case(str_input, first_cap):
         print("Please input a string and a boolean.")
 
 def snake_case(str_input, to_snake): 
-    div = ("admin", "dev")
+    div = ("admin", "dev", "joke")
     str_input = str_input.lower() 
 
     if isinstance(str_input, str) and isinstance(to_snake, bool) and to_snake: 
@@ -291,21 +292,65 @@ def to_time_zone(arg):
     
     return arg
 
-# def color_converter(arg): 
-#     arg_split = list(arg)
-#     hex = False
-#     if arg_split[0] == "#": 
-#         arg = arg.replace("#", "")
-#         arg_split = list(arg)
-#         hex = True 
-#     elif len(arg_split) == 6: 
-#         hex = True 
 
-#     if hex: 
-#         return int(arg, 16)
-#     else: 
-#         arg_split = arg.split(" ")
-#         hexVal = '{:02x}{:02x}{:02x}'.format(int(arg[0]), int(arg[1]), int(arg[2]))
-#         return int(hexVal, 16)
+class EastHelpCommand(discord.ext.commands.HelpCommand):
+    cog_list = ["Commands", "DevCommands", "AdminCommands", "JokeCommands"]
+    def get_destination(self): 
+        #TODO: Make DMs a valid option
+        ctx = self.context 
+        return ctx.channel
 
- 
+    async def server_prefix(self):
+        return (await self.context.bot.get_prefix(self.context))[0]
+    
+    async def gen_command_signature(self, command): 
+        parent_command = command.full_parent_name 
+        if parent_command: 
+            return f"{await self.server_prefix()}{parent_command} {command.name} {command.signature}"
+        else: 
+            return f"{await self.server_prefix()}{command.name} {command.signature}"
+
+    async def command_help(self, command, embed, signature = False): 
+        if signature:
+            embed.add_field(name = "Signature", value = await self.gen_command_signature(command))
+            embed.add_field(name = "Documentation", value = command.help, inline = False)
+        else: 
+            embed.add_field(name = command.name, value = command.description, inline = False)
+    
+    async def send_bot_help(self, mapping):
+        embed = discord.Embed(title = "Help", color = 0xff0000)
+        for cog in mapping: 
+            if cog is None: 
+                continue 
+
+            if cog.qualified_name == "DevCommands": 
+                continue 
+            
+            embed.add_field(name = cog.qualified_name, value = cog.description, inline = False)
+        await self.get_destination().send(embed = embed)
+
+    async def send_cog_help(self, cog): 
+        embed = discord.Embed(title = "Help", color = 0xff0000)
+        embed.description = cog.description
+        for command in cog.get_commands(): 
+            await self.command_help(command, embed)
+        await self.get_destination().send(embed = embed)
+
+    async def send_group_help(self, group): 
+        embed = discord.Embed(title = "Help", color = 0xff0000)
+        embed.description = group.description
+        await self.command_help(group, embed, True)
+        content = ""
+        for command in group.commands: 
+            content += f"{command.name}: {command.description}\n"
+
+        embed.add_field(name = "Subcommands", value = content)
+        await self.get_destination().send(embed = embed)
+
+    async def send_command_help(self, command):
+        embed = discord.Embed(title = "Help", color = 0xff0000)
+        await self.command_help(command, embed, True)
+        await self.get_destination().send(embed = embed)
+
+    
+

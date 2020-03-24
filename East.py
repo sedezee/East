@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+import DiscordUtils as dutils
 import random
 import time_zone
 import json
@@ -9,6 +10,12 @@ TOKEN = "MzM5MTE5MDY5MDY2Mjk3MzU1.XnKyRQ.GDF5OpW0I9ubNlOeYvbBUN-Crs4"
 
 
 class East (commands.Bot):
+
+    def __init__(self, **kwargs):
+        if kwargs.get("help_command") is None: 
+            kwargs["help_command"] = dutils.EastHelpCommand()
+
+        super().__init__(**kwargs)
 
     with open ("data_storage.json", "r") as file: 
         data = json.load(file)
