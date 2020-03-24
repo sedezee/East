@@ -6,7 +6,7 @@ import time_zone
 import json
 import re
 
-TOKEN = "MzM5MTE5MDY5MDY2Mjk3MzU1.XnKyRQ.GDF5OpW0I9ubNlOeYvbBUN-Crs4"
+TOKEN = ""
 
 
 class East (commands.Bot):
