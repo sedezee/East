@@ -188,14 +188,17 @@ class AdminCommands(commands.Cog):
         ``military_time`` to False
         ``Prefix`` to &
         """
-        self.bot.data[str(ctx.guild.id)]["options"]["show_admins"] = True
-        self.bot.data[str(ctx.guild.id)]["options"]["time_zone"] = "UTC"
-        self.bot.data[str(ctx.guild.id)]["options"]["military_time"] = False
-        self.bot.data[str(ctx.guild.id)]["options"]["scoreboard_pl"] = 100
-        self.bot.data[str(ctx.guild.id)]["options"]["prefix"] = "&"
+        self.bot.db.execute("""UPDATE options SET show_admins = True, time_zone = "UTC", military_time = False, scoreboard_pl = 100, prefix = "&"
+                               WHERE guild_id = $s""",
+                                   (str(ctx.guild.id),))
+        # self.bot.data[str(ctx.guild.id)]["options"]["show_admins"] = True
+        # self.bot.data[str(ctx.guild.id)]["options"]["time_zone"] = "UTC"
+        # self.bot.data[str(ctx.guild.id)]["options"]["military_time"] = False
+        # self.bot.data[str(ctx.guild.id)]["options"]["scoreboard_pl"] = 100
+        # self.bot.data[str(ctx.guild.id)]["options"]["prefix"] = "&"
 
-        with open("data_storage.json", "w") as file: 
-            json.dump(self.bot.data, file)
+        # with open("data_storage.json", "w") as file:
+        #     json.dump(self.bot.data, file)
 
         await ctx.send("All options set to default, including the prefix.")            
     
