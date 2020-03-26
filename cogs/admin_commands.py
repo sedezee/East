@@ -21,7 +21,7 @@ class AdminCommands(commands.Cog):
                 (str(ctx.guild.id),))
             db_admin = self.bot.db.fetchone()[0]
         except Exception: 
-            print("DB syntax error.")
+            print("DB importation error.")
             db_admin = ""
         
         if ctx.guild.id is None: 
