@@ -149,8 +149,6 @@ class AdminCommands(commands.Cog):
         #Get the index of each item we want to remove (in case more rows
         #are added or removed) and remove them for each of the lists. Due 
         #to getter method, values should correspond. 
-        response_list.pop(opt_list.index("admin_ids"))
-        opt_list.pop(opt_list.index("admin_ids"))
         response_list.pop(opt_list.index("guild_id"))
         opt_list.pop(opt_list.index("guild_id"))
 
@@ -162,17 +160,18 @@ class AdminCommands(commands.Cog):
 
     @options.command(name = "set", description = "Sets an option to a new value.")
     @commands.guild_only()
-    async def _opt_set(self, ctx, param, arg: typing.Union[int, str]): 
+    async def _opt_set(self, ctx, param: str, arg: typing.Union[int, str]): 
         """Sets a specific option to a new value. ``&options set [option] [value]``."""
         param = param.lower()
 
         opt_list = ctx.bot.OPTIONS_LIST
         if param in opt_list.keys():
             if(isinstance(arg, opt_list[param])):
-                self.bot.db.execute("""UPDATE options SET %s = %s 
-                                       WHERE guild_id = %s""",
-                                           (param, arg, str(ctx.guild.id),))
-                # self.bot.data[str(ctx.guild.id)]["options"][param] = arg
+                self.bot.db.execute("""
+                UPDATE options SET {} = %s 
+                WHERE guild_id = %s;"""
+                    .format(param),
+                    (arg, str(ctx.guild.id)))
                 await ctx.send(f"{param} set to {arg}.")
             else: 
                 await ctx.send(f"{arg} is not the right type of argument for {param}.")
@@ -191,18 +190,11 @@ class AdminCommands(commands.Cog):
         ``military_time`` to False
         ``Prefix`` to &
         """
-        self.bot.db.execute("""UPDATE options SET show_admins = %s, time_zone = %s, military_time = %s, scoreboard_pl = %s, prefix = %s
-                               WHERE guild_id = %s""",
-                                   (True, "UTC", False, 100, "&", str(ctx.guild.id),))
-        # self.bot.data[str(ctx.guild.id)]["options"]["show_admins"] = True
-        # self.bot.data[str(ctx.guild.id)]["options"]["time_zone"] = "UTC"
-        # self.bot.data[str(ctx.guild.id)]["options"]["military_time"] = False
-        # self.bot.data[str(ctx.guild.id)]["options"]["scoreboard_pl"] = 100
-        # self.bot.data[str(ctx.guild.id)]["options"]["prefix"] = "&"
-
-        # with open("data_storage.json", "w") as file:
-        #     json.dump(self.bot.data, file)
-
+        self.bot.db.execute("""
+        UPDATE options 
+        SET show_admins = %s, time_zone = %s, military_time = %s, scoreboard_pl = %s, prefix = %s
+        WHERE guild_id = %s;""",
+            (True, "UTC", False, 100, "&", str(ctx.guild.id)))
         await ctx.send("All options set to default, including the prefix.")            
     
     @commands.command(description = "Removes x amount of messages from the channel.")

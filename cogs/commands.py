@@ -100,31 +100,24 @@ class Commands(commands.Cog):
         await ctx.send("All unused color roles cleared.")
 
     @commands.command(description="Returns the time for the set timezone.")
-    async def time(self, ctx, time_zone_var=None):
+    async def time(self, ctx, selected_zone=None):
         """Returns the time for the current timezone, which can be set in timezones. Used with ``&time``"""
-        if not time_zone_var:
-            self.bot.db.execute("""SELECT time_zone FROM options
-                                   WHERE guild_id = %s""",
-                                       (str(ctx.guild.id),))
-            time_zone_var = self.bot.db.fetchone()
-            # time_zone_var = self.bot.data[str(ctx.guild.id)]["options"]["time_zone"]
-        else:
-            time_zone_var = time_zone_var.upper()
-            time_zone_var = dutils.to_time_zone(time_zone_var)
-            if not isinstance(time_zone_var, time_zone.TimeZone):
-                await ctx.send("Sorry, that's not a valid time zone. I'll be proceeding with your default time zone.")
-                self.bot.db.execute("""SELECT time_zone FROM options
-                                       WHERE guild_id = %s""",
-                                           (str(ctx.guild.id),))
-                time_zone_var = self.bot.db.fetchone()
-                # time_zone_var = self.bot.data[str(ctx.guild.id)]["options"]["time_zone"]
+        if selected_zone is None or not isinstance(dutils.to_time_zone(selected_zone.upper()), time_zone.TimeZone):
+            if selected_zone is not None: 
+                await ctx.send("Sorry, that time zone could not be found, so I'll be proceeding with the default for your server!")
+            self.bot.db.execute("""
+            SELECT time_zone FROM options
+            WHERE guild_id = %s""",
+                (str(ctx.guild.id),))
+            selected_zone = self.bot.db.fetchone()[0]
 
-        self.bot.db.execute("""SELECT military_time FROM options
-                               WHERE guild_id = %s""",
-                                   (str(ctx.guild.id),))
-        military_time = self.bot.db.fetchone()
-        # military_time = self.bot.data[str(ctx.guild.id)]["options"]["military_time"]
-        time_list = dutils.get_time(time_zone_var, military_time, True)
+        self.bot.db.execute("""
+        SELECT military_time FROM options
+        WHERE guild_id = %s""",
+            (str(ctx.guild.id),))
+        military_time = self.bot.db.fetchone()[0]
+
+        time_list = dutils.get_time(selected_zone, military_time, True)
 
         if time_list[2] < 10:
             time_list[2] = "0" + str(time_list[2])
