@@ -52,11 +52,11 @@ class AdminCommands(commands.Cog):
 
         db_admin = self.bot.db.fetchone()[0]
         if db_admin is not None:
-            admn_list = db_admin.split(",")
+            admin_list = db_admin.split(",")
 
             admins = "```The admins are: \n"
 
-            for item in admn_list: 
+            for item in admin_list: 
                 print(item)
                 admin_user = ctx.bot.get_user(int(item))
                 admins += (f"{admin_user.name}#{str(admin_user.discriminator)}\n")
@@ -77,10 +77,10 @@ class AdminCommands(commands.Cog):
 
         try:
             if db_admin is not None: 
-                admn_list = db_admin.split(",")
-                if user.id in admn_list: 
+                admin_list = db_admin.split(",")
+                if user.id in admin_list: 
                     await ctx.send(user.mention + " is already an administrator.")
-                elif not user.id in admn_list:
+                elif not user.id in admin_list:
                     db_admin += f",{str(user.id)}"
 
             else: 
