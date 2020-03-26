@@ -168,16 +168,19 @@ class AdminCommands(commands.Cog):
 
         opt_list = ctx.bot.OPTIONS_LIST
         if param in opt_list.keys():
-            if(isinstance(arg, opt_list[param])):  
-                self.bot.data[str(ctx.guild.id)]["options"][param] = arg
+            if(isinstance(arg, opt_list[param])):
+                self.bot.db.execute("""UPDATE options SET %s = %s 
+                                       WHERE guild_id = %s""",
+                                           (param, arg, str(ctx.guild.id),))
+                # self.bot.data[str(ctx.guild.id)]["options"][param] = arg
                 await ctx.send(f"{param} set to {arg}.")
             else: 
                 await ctx.send(f"{arg} is not the right type of argument for {param}.")
         else: 
             await ctx.send(f"{param} is not an option. To see options, type &options show.")
         
-        with open("data_storage.json", "w") as file: 
-            json.dump(self.bot.data, file)
+        # with open("data_storage.json", "w") as file:
+        #     json.dump(self.bot.data, file)
     
     @options.command(name = "default", description = "Returns all options to the default.")
     @commands.guild_only()
@@ -188,14 +191,17 @@ class AdminCommands(commands.Cog):
         ``military_time`` to False
         ``Prefix`` to &
         """
-        self.bot.data[str(ctx.guild.id)]["options"]["show_admins"] = True
-        self.bot.data[str(ctx.guild.id)]["options"]["time_zone"] = "UTC"
-        self.bot.data[str(ctx.guild.id)]["options"]["military_time"] = False
-        self.bot.data[str(ctx.guild.id)]["options"]["scoreboard_pl"] = 100
-        self.bot.data[str(ctx.guild.id)]["options"]["prefix"] = "&"
+        self.bot.db.execute("""UPDATE options SET show_admins = %s, time_zone = %s, military_time = %s, scoreboard_pl = %s, prefix = %s
+                               WHERE guild_id = %s""",
+                                   (True, "UTC", False, 100, "&", str(ctx.guild.id),))
+        # self.bot.data[str(ctx.guild.id)]["options"]["show_admins"] = True
+        # self.bot.data[str(ctx.guild.id)]["options"]["time_zone"] = "UTC"
+        # self.bot.data[str(ctx.guild.id)]["options"]["military_time"] = False
+        # self.bot.data[str(ctx.guild.id)]["options"]["scoreboard_pl"] = 100
+        # self.bot.data[str(ctx.guild.id)]["options"]["prefix"] = "&"
 
-        with open("data_storage.json", "w") as file: 
-            json.dump(self.bot.data, file)
+        # with open("data_storage.json", "w") as file:
+        #     json.dump(self.bot.data, file)
 
         await ctx.send("All options set to default, including the prefix.")            
     
