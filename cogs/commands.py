@@ -104,7 +104,8 @@ class Commands(commands.Cog):
         """Returns the time for the current timezone, which can be set in timezones. Used with ``&time``"""
         if not time_zone_var:
             self.bot.db.execute("""SELECT time_zone FROM options
-                                                   WHERE guild_id = %s""", (str(ctx.guild.id),))
+                                   WHERE guild_id = %s""",
+                                       (str(ctx.guild.id),))
             time_zone_var = self.bot.db.fetchone()
             # time_zone_var = self.bot.data[str(ctx.guild.id)]["options"]["time_zone"]
         else:
@@ -113,12 +114,14 @@ class Commands(commands.Cog):
             if not isinstance(time_zone_var, time_zone.TimeZone):
                 await ctx.send("Sorry, that's not a valid time zone. I'll be proceeding with your default time zone.")
                 self.bot.db.execute("""SELECT time_zone FROM options
-                                                       WHERE guild_id = %s""", (str(ctx.guild.id),))
+                                       WHERE guild_id = %s""",
+                                           (str(ctx.guild.id),))
                 time_zone_var = self.bot.db.fetchone()
                 # time_zone_var = self.bot.data[str(ctx.guild.id)]["options"]["time_zone"]
 
         self.bot.db.execute("""SELECT military_time FROM options
-                                               WHERE guild_id = %s""", (str(ctx.guild.id),))
+                               WHERE guild_id = %s""",
+                                   (str(ctx.guild.id),))
         military_time = self.bot.db.fetchone()
         # military_time = self.bot.data[str(ctx.guild.id)]["options"]["military_time"]
         time_list = dutils.get_time(time_zone_var, military_time, True)
