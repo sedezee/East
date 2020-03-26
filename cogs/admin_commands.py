@@ -12,7 +12,13 @@ class AdminCommands(commands.Cog):
     
     #todo: write add_admin command tomorrow
     def cog_check(self, ctx): 
-        dataIndex = self.bot.data[str(ctx.guild.id)]["admin_ids"]
+        self.bot.db.execute("""
+        SELECT admin_ids FROM options
+        WHERE guild_id = %s;
+        """,
+            (str(ctx.guild.id),))
+        db_admin = self.bot.db.fetchone()[0]
+        
 
         if ctx.guild.id is None: 
             return True
@@ -21,10 +27,12 @@ class AdminCommands(commands.Cog):
         if ctx.author.id == ctx.guild.owner.id: 
             return True
         
-        if ctx.author.id in dataIndex: 
-            return True
+        if db_admin is not None:
+            db_admin = db_admin.split(",")
+            if str(ctx.author.id) in db_admin: 
+                return True
 
-        if len(dataIndex) == 0 and ctx.author.guild_permissions.administrator:
+        if db_admin is None and ctx.author.guild_permissions.administrator:
             return True
 
     @commands.group(description = "Admin related commands.")
@@ -37,28 +45,54 @@ class AdminCommands(commands.Cog):
     @commands.guild_only() 
     async def _adm_show(self, ctx):
         """Shows a list of admins in the current guild. ``&options show`` or ``&options list``"""
-        dataIndex = self.bot.data[str(ctx.guild.id)]["admin_ids"]
-        admins = "```The admins are: \n"
+        self.bot.db.execute("""
+        SELECT admin_ids FROM options
+        WHERE guild_id = %s""", 
+            (str(ctx.guild.id),))
 
-        for item in dataIndex: 
-            admin_user = ctx.bot.get_user(item)
-            admins += (f"{admin_user.name}#{str(admin_user.discriminator)}\n")
-        
-        await ctx.send(admins + "```")
+        db_admin = self.bot.db.fetchone()[0]
+        if db_admin is not None:
+            admn_list = db_admin.split(",")
+
+            admins = "```The admins are: \n"
+
+            for item in admn_list: 
+                print(item)
+                admin_user = ctx.bot.get_user(int(item))
+                admins += (f"{admin_user.name}#{str(admin_user.discriminator)}\n")
+            
+            await ctx.send(admins + "```")
+        else: 
+            await ctx.send("This server does not appear to have any registered admins, sorry.")
         
     @admins.command(name = "add", description = "Adds an admin to the guild list.")
     @commands.guild_only()
     async def _adm_add(self, ctx, user: discord.User): 
         """Removes an admin from the guild list. ``&admins add @[admin]``"""
-        dataIndex = self.bot.data[str(ctx.guild.id)]["admin_ids"]
+        self.bot.db.execute("""
+        SELECT admin_ids FROM options
+        WHERE guild_id = %s""", 
+            (str(ctx.guild.id),))
+        db_admin = self.bot.db.fetchone()[0] 
+
         try:
-            if user.id in dataIndex: 
-                await ctx.send(user.mention + " is already an administrator.")
-            elif not user.id in dataIndex:
-                dataIndex.append(user.id)
-                await ctx.send(user.mention + " added as an administrator!") 
-            with open("data_storage.json", "w") as file: 
-                json.dump(self.bot.data, file)
+            if db_admin is not None: 
+                admn_list = db_admin.split(",")
+                if user.id in admn_list: 
+                    await ctx.send(user.mention + " is already an administrator.")
+                elif not user.id in admn_list:
+                    db_admin += f",{str(user.id)}"
+
+            else: 
+                db_admin = str(user.id)
+
+            self.bot.db.execute("""
+                UPDATE options SET admin_ids = %s
+                WHERE guild_id = %s;
+                """,
+                    (db_admin, str(ctx.guild.id)))
+                    
+            await ctx.send(user.mention + " added as an administrator!") 
         except: 
             await ctx.send("Please submit a valid admin name.")
 
@@ -67,17 +101,32 @@ class AdminCommands(commands.Cog):
     async def _adm_remove(self, ctx, user: discord.User):
         """Removes an admin from the guild list. ``&admins remove @[admin]``"""
         #remove admin and add admin use the same search functionality. streamline it.   
-        dataIndex = self.bot.data[str(ctx.guild.id)]["admin_ids"]
-        try: 
-            if not user.id in dataIndex:
-                await ctx.send(user.mention + " is not an administrator.")
-            elif user.id in dataIndex: 
-                await ctx.send(user.mention + " removed.")
-                dataIndex.remove(user.id)
-            with open("data_storage.json", "w") as file: 
-                json.dump(self.bot.data, file)
-        except: 
-            await ctx.send("Please submit a valid admin name.")
+        self.bot.db.execute("""
+        SELECT admin_ids FROM options
+        WHERE guild_id = %s""", 
+            (str(ctx.guild.id),))
+        db_admin = self.bot.db.fetchone()[0]
+        
+        if db_admin is not None: 
+            db_admin = db_admin.split(",")
+            db_admin.remove(str(user.id))
+            if len(db_admin) == 1: 
+                db_admin = db_admin[0]
+            elif not len(db_admin):
+                db_admin = None
+            else: 
+                db_admin = ','.join(db_admin)
+            
+            self.bot.db.execute("""
+            UPDATE options SET admin_ids = %s
+            WHERE guild_id = %s;
+            """,
+                (db_admin, str(ctx.guild.id)))
+            
+            await ctx.send(f"{user.mention} removed!")
+
+        # except: 
+            # await ctx.send("Please submit a valid admin name.")
 
     @commands.group(description = "Guild options and related commands.")
     @commands.guild_only()
@@ -90,17 +139,33 @@ class AdminCommands(commands.Cog):
     @commands.guild_only()
     async def _opt_show(self, ctx): 
         """Reveals a list of options. Can be called with either ``&options show`` or ``&options list``."""
-        opt_out = ""
-        for item in ctx.bot.OPTIONS_LIST.keys():
-            opt_out += ("{0} : {1} \n"
-                .format(str(item), str(self.bot.data[str(ctx.guild.id)]["options"][item])))
-        await ctx.send(f"```{opt_out}```")
+        db = self.bot.db
+        db.execute("SELECT json_object_keys(to_json((SELECT t FROM options t LIMIT 1)));")
+        opt_list = [r[0] for r in db.fetchall()]
+        db.execute("SELECT * FROM options WHERE guild_id = %s",
+            (str(ctx.guild.id),))
+        response_list = list(db.fetchone())
+
+        #Get the index of each item we want to remove (in case more rows
+        #are added or removed) and remove them for each of the lists. Due 
+        #to getter method, values should correspond. 
+        response_list.pop(opt_list.index("admin_ids"))
+        opt_list.pop(opt_list.index("admin_ids"))
+        response_list.pop(opt_list.index("guild_id"))
+        opt_list.pop(opt_list.index("guild_id"))
+
+        embed = discord.Embed(title = "Options", color = 0xff0000)
+        for i, option in enumerate(opt_list):
+            embed.add_field(name = option, value = response_list[i], inline = False)
+        
+        await ctx.send(embed = embed)
 
     @options.command(name = "set", description = "Sets an option to a new value.")
     @commands.guild_only()
-    async def _opt_set(self, ctx, param, arg: typing.Union[time_zone.TimeZone, int, str]): 
+    async def _opt_set(self, ctx, param, arg: typing.Union[int, str]): 
         """Sets a specific option to a new value. ``&options set [option] [value]``."""
         param = param.lower()
+
         opt_list = ctx.bot.OPTIONS_LIST
         if param in opt_list.keys():
             if(isinstance(arg, opt_list[param])):  
@@ -131,7 +196,7 @@ class AdminCommands(commands.Cog):
 
         with open("data_storage.json", "w") as file: 
             json.dump(self.bot.data, file)
-            
+
         await ctx.send("All options set to default, including the prefix.")            
     
     @commands.command(description = "Removes x amount of messages from the channel.")

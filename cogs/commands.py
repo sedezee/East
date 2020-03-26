@@ -92,72 +92,6 @@ class Commands(commands.Cog):
         
         await ctx.send("All unused color roles cleared.")
 
-    @commands.command(aliases = ["tc"], description = "A test command.", hidden = True)
-    async def testCommand(self, ctx):
-        """A test command"""
-        embed = discord.Embed(title = "title", description = "this is an embed", color = 0xff0000)
-        embed.add_field(name = "test1", value = "testing1", inline = False)
-        embed.add_field(name = "test5", value = "testing2", inline = True)
-        embed.add_field(name = "test4", value = "testing 3", inline = True)
-        await ctx.send(embed=embed) 
-
-    @commands.group(description = "Registers a virtual scoreboard for the server. Points may be given at will.", invoke_without_command = True)
-    @commands.guild_only()
-    async def scoreboard(self, ctx, page_num):
-        """Shows the scoreboard for the server."""
-        scoreboard_data = self.bot.data[str(ctx.guild.id)]["scoreboard"]
-        embed = discord.Embed(title = "Scoreboard", color = 0xff0000)
-        entries = 10
-        pages = int(len(scoreboard_data)/entries)
-        if page_num > pages: 
-            await ctx.send("Your page number is too high, so I'm just giving you the last page!")
-            page_num = pages 
-    
-    @scoreboard.command(name = "givePoints", description = "Awards a user any number of points.")
-    async def _givePoints(self, ctx, user: typing.Union[discord.User, None], point_num: typing.Union[int]):
-        """Gives a specified user any number of specified points. Format is ``&scoreboard givePoints @user number_points``."""
-        sign = ctx.prefix
-        scoreboard_data = self.bot.data[str(ctx.guild.id)]["scoreboard"]
-        scoreboard_limit = self.bot.data[str(ctx.guild.id)]["options"].get("scoreboard_pl")
-
-        if user != None and point_num != None: 
-            if point_num > scoreboard_limit: 
-                await ctx.send(f"Sorry, that's above your servers limit of {scoreboard_limit} points! Please choose a smaller number.")
-            else:
-                print("AAAA")
-                user_data = dict(filter(lambda user_item: user_item['user'] == str(user.id), scoreboard_data))
-                await ctx.send(f"{point_num} points given to {user.mention}!")
-
-        else: 
-            await ctx.send(f"Something went wrong! Check to make sure that your formatting is ``{sign}scoreboard givePoints @User number_points``")
-        
-        with open("data_storage.json", "w") as file: 
-            json.dump(self.bot.data, file)
-
-    @scoreboard.command(name = "givePoint", description = "Gives a specified user one point.")
-    async def _givePoint(self, ctx, user: typing.Union[discord.User, None]):
-        """Gives a user a single point. Formatting is: ``&givePoint @User``."""
-        scoreboard_data = self.bot.data[str(ctx.guild.id)]["scoreboard"]
-        sign = ctx.prefix
-        if user != None: 
-            if user.id in scoreboard_data: 
-                scoreboard_data[user.id] = int(scoreboard_data.get(user.id)) + 1
-            else: 
-                scoreboard_data[user.id] = 1
-        else: 
-            await ctx.send(f"Something went wrong! Check to make sure that your formatting is ``{sign}scoreboard givePoints @User number_of_points``")
-
-        with open("data_storage.json", "w") as file: 
-            json.dump(self.bot.data, file)
-        
-    @scoreboard.command(name = "clear")
-    async def _clear(self, ctx): 
-        """Deletes all of the saved scoreboard data for the server."""
-        self.bot.data[str(ctx.guild.id)]["scoreboard"] = {}
-        with open("data_storage.json", "w") as file: 
-            json.dump(self.bot.data, file)
-        
-
     @commands.command(description = "Returns the time for the set timezone.")
     async def time(self, ctx, time_zone_var = None): 
         """Returns the time for the current timezone, which can be set in timezones. Used with ``&time``"""
@@ -202,6 +136,7 @@ class Commands(commands.Cog):
                 await ctx.send(f"{abs(time_delta.days)} {day_string} since {month}-{day}-{year}.")
             else:
                 await ctx.send(f"{time_delta.days} {day_string} until {month}-{day}-{year}.") 
+                
         elif unit == "weeks":
             
             if abs(days) == 1: 
