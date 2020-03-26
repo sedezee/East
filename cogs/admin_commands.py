@@ -50,13 +50,12 @@ class AdminCommands(commands.Cog):
     async def _adm_show(self, ctx):
         """Shows a list of admins in the current guild. ``&options show`` or ``&options list``"""
         self.bot.db.execute("""
-        SELECT admin_ids FROM options
+        SELECT admin_id FROM admins
         WHERE guild_id = %s""", 
             (str(ctx.guild.id),))
 
-        db_admin = self.bot.db.fetchone()[0]
-        if db_admin is not None:
-            admin_list = db_admin.split(",")
+        admin_list = self.bot.db.fetchall()
+        if len(admin_list) != 0:
 
             admins = "```The admins are: \n"
 
