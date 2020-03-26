@@ -4,6 +4,7 @@ import typing
 import time_zone
 from discord.ext import commands
 import json
+import psycopg2
 
 class AdminCommands(commands.Cog): 
     """Designed for administrator use. If there isn't an assigned list of admins, defaults to anyone with admin privileges."""
@@ -12,14 +13,17 @@ class AdminCommands(commands.Cog):
     
     #todo: write add_admin command tomorrow
     def cog_check(self, ctx): 
-        self.bot.db.execute("""
-        SELECT admin_ids FROM options
-        WHERE guild_id = %s;
-        """,
-            (str(ctx.guild.id),))
-        db_admin = self.bot.db.fetchone()[0]
+        try:
+            self.bot.db.execute("""
+            SELECT admin_ids FROM options
+            WHERE guild_id = %s;
+            """,
+                (str(ctx.guild.id),))
+            db_admin = self.bot.db.fetchone()[0]
+        except Exception: 
+            print("DB syntax error.")
+            db_admin = ""
         
-
         if ctx.guild.id is None: 
             return True
         if ctx.author.id in ctx.bot.DEV_IDS:
