@@ -20,9 +20,6 @@ class East (commands.Bot):
 
         super().__init__(**kwargs)
 
-    with open ("data_storage.json", "r") as file: 
-        data = json.load(file)
-
     conn = psycopg2.connect(f"dbname = eastdb user=EastBot password = {tap.getDBPass()}")
     conn.set_session(autocommit = True)
     db = conn.cursor()
@@ -46,15 +43,15 @@ class East (commands.Bot):
     
     async def on_guild_join(self, guild):
         self.db.execute("""
-        INSERT INTO options (guild_id, show_admins, time_zone, military_time, prefix, scoreboard_pl) 
+        INSERT INTO east_schema.options (guild_id, show_admins, time_zone, military_time, prefix, scoreboard_pl) 
         VALUES (%s, %s, %s, %s, %s, %s);
         """,
             (str(guild.id), True, "UTC", False, "&", 100))
     
     async def on_guild_remove(self, guild): 
-        self.db.execute("DELETE FROM options WHERE guild_id = %s;", 
+        self.db.execute("DELETE FROM east_schema.options WHERE guild_id = %s;", 
             (str(guild.id),))
-        self.db.execute("DELETE FROM scoreboard WHERE guild_id = %s", 
+        self.db.execute("DELETE FROM east_schema.scoreboard WHERE guild_id = %s;", 
             (str(guild.id),))
     
     async def process_commands(self, message): 
@@ -67,12 +64,15 @@ class East (commands.Bot):
 
 def getPrefix(self, ctx): 
     self.db.execute("""
-    SELECT prefix FROM options
+    SELECT prefix FROM east_schema.options
     WHERE guild_id = %s;
     """, 
         (str(ctx.guild.id),))
-    
-    return self.db.fetchone()
+    prefix = self.db.fetchone()
+    if prefix is not None: 
+        return prefix
+    else:
+        return "&"
 
 bot = East(command_prefix = getPrefix)
 

@@ -106,13 +106,13 @@ class Commands(commands.Cog):
             if selected_zone is not None: 
                 await ctx.send("Sorry, that time zone could not be found, so I'll be proceeding with the default for your server!")
             self.bot.db.execute("""
-            SELECT time_zone FROM options
+            SELECT time_zone FROM east_schema.options
             WHERE guild_id = %s""",
                 (str(ctx.guild.id),))
             selected_zone = self.bot.db.fetchone()[0]
 
         self.bot.db.execute("""
-        SELECT military_time FROM options
+        SELECT military_time FROM east_schema.options
         WHERE guild_id = %s""",
             (str(ctx.guild.id),))
         military_time = self.bot.db.fetchone()[0]

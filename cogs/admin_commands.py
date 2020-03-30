@@ -15,11 +15,10 @@ class AdminCommands(commands.Cog):
     def cog_check(self, ctx): 
         try:
             self.bot.db.execute("""
-            SELECT admin_ids FROM options
-            WHERE guild_id = %s;
-            """,
+            SELECT user_id FROM east_schema.admins
+            WHERE guild_id = %s""", 
                 (str(ctx.guild.id),))
-            db_admin = self.bot.db.fetchone()[0]
+            db_admin = [r[0] for r in self.bot.db.fetchall()]
         except Exception: 
             print("DB importation error.")
             db_admin = ""
@@ -50,18 +49,17 @@ class AdminCommands(commands.Cog):
     async def _adm_show(self, ctx):
         """Shows a list of admins in the current guild. ``&options show`` or ``&options list``"""
         self.bot.db.execute("""
-        SELECT admin_id FROM admins
+        SELECT user_id FROM east_schema.admins
         WHERE guild_id = %s""", 
             (str(ctx.guild.id),))
-
-        admin_list = self.bot.db.fetchall()
-        if len(admin_list) != 0:
+        db_admin = [r[0] for r in self.bot.db.fetchall()]
+        
+        if len(db_admin) != 0:
 
             admins = "```The admins are: \n"
 
-            for item in admin_list: 
-                print(item)
-                admin_user = ctx.bot.get_user(int(item))
+            for admin_id in db_admin: 
+                admin_user = ctx.bot.get_user(int(admin_id))
                 admins += (f"{admin_user.name}#{str(admin_user.discriminator)}\n")
             
             await ctx.send(admins + "```")
@@ -73,63 +71,35 @@ class AdminCommands(commands.Cog):
     async def _adm_add(self, ctx, user: discord.User): 
         """Removes an admin from the guild list. ``&admins add @[admin]``"""
         self.bot.db.execute("""
-        SELECT admin_ids FROM options
+        SELECT user_id FROM east_schema.admins
         WHERE guild_id = %s""", 
             (str(ctx.guild.id),))
-        db_admin = self.bot.db.fetchone()[0] 
+        db_admin = self.bot.db.fetchall()
 
-        try:
-            if db_admin is not None: 
-                admin_list = db_admin.split(",")
-                if user.id in admin_list: 
-                    await ctx.send(user.mention + " is already an administrator.")
-                elif not user.id in admin_list:
-                    db_admin += f",{str(user.id)}"
-
-            else: 
-                db_admin = str(user.id)
-
+        if str(user.id) in db_admin: 
+            await ctx.send(user.mention + " is already an administrator.")
+        else: 
             self.bot.db.execute("""
-                UPDATE options SET admin_ids = %s
-                WHERE guild_id = %s;
+                INSERT INTO east_schema.admins (guild_id, user_id)
+                VALUES (%s, %s)
                 """,
-                    (db_admin, str(ctx.guild.id)))
+                    (str(ctx.guild.id), str(user.id)))
                     
             await ctx.send(user.mention + " added as an administrator!") 
-        except: 
-            await ctx.send("Please submit a valid admin name.")
 
     @admins.command(name = "remove", description = "Removes an admin from the guild list.")
     @commands.guild_only()
     async def _adm_remove(self, ctx, user: discord.User):
         """Removes an admin from the guild list. ``&admins remove @[admin]``"""
-        #remove admin and add admin use the same search functionality. streamline it.   
-        self.bot.db.execute("""
-        SELECT admin_ids FROM options
-        WHERE guild_id = %s""", 
-            (str(ctx.guild.id),))
-        db_admin = self.bot.db.fetchone()[0]
-        
-        if db_admin is not None: 
-            db_admin = db_admin.split(",")
-            db_admin.remove(str(user.id))
-            if len(db_admin) == 1: 
-                db_admin = db_admin[0]
-            elif not len(db_admin):
-                db_admin = None
-            else: 
-                db_admin = ','.join(db_admin)
-            
+        try: 
             self.bot.db.execute("""
-            UPDATE options SET admin_ids = %s
-            WHERE guild_id = %s;
-            """,
-                (db_admin, str(ctx.guild.id)))
-            
-            await ctx.send(f"{user.mention} removed!")
+            DELETE FROM east_schema.admins
+            WHERE guild_id = %s AND user_id = %s""", 
+                (str(ctx.guild.id), str(user.id)))
+            await ctx.send(f"{user.mention} successfully removed!")
+        except: 
+            await ctx.send(f"{user.mention} is either not an admin or does not exist.")
 
-        # except: 
-            # await ctx.send("Please submit a valid admin name.")
 
     @commands.group(description = "Guild options and related commands.")
     @commands.guild_only()
@@ -145,7 +115,7 @@ class AdminCommands(commands.Cog):
         db = self.bot.db
         db.execute("SELECT json_object_keys(to_json((SELECT t FROM options t LIMIT 1)));")
         opt_list = [r[0] for r in db.fetchall()]
-        db.execute("SELECT * FROM options WHERE guild_id = %s",
+        db.execute("SELECT * FROM east_schema.options WHERE guild_id = %s",
             (str(ctx.guild.id),))
         response_list = list(db.fetchone())
 
@@ -171,7 +141,7 @@ class AdminCommands(commands.Cog):
         if param in opt_list.keys():
             if(isinstance(arg, opt_list[param])):
                 self.bot.db.execute("""
-                UPDATE options SET {} = %s 
+                UPDATE east_schema.options SET {} = %s 
                 WHERE guild_id = %s;"""
                     .format(param),
                     (arg, str(ctx.guild.id)))
@@ -194,10 +164,23 @@ class AdminCommands(commands.Cog):
         ``Prefix`` to &
         """
         self.bot.db.execute("""
-        UPDATE options 
-        SET show_admins = %s, time_zone = %s, military_time = %s, scoreboard_pl = %s, prefix = %s
-        WHERE guild_id = %s;""",
-            (True, "UTC", False, 100, "&", str(ctx.guild.id)))
+        SELECT * FROM east_schema.options 
+        WHERE guild_id = %s
+        """, 
+           (str(ctx.guild.id),)) 
+
+        if self.bot.db.fetchone() is None:
+            self.bot.db.execute("""
+            INSERT INTO east_schema.options (guild_id, show_admins, time_zone, military_time, prefix, scoreboard_pl) 
+            VALUES (%s, %s, %s, %s, %s, %s);
+            """,
+                (str(ctx.guild.id), True, "UTC", False, "&", 100))
+        else: 
+            self.bot.db.execute("""
+            UPDATE east_schema.options 
+            SET show_admins = %s, time_zone = %s, military_time = %s, scoreboard_pl = %s, prefix = %s
+            WHERE guild_id = %s;""",
+                (True, "UTC", False, 100, "&", str(ctx.guild.id)))
         await ctx.send("All options set to default, including the prefix.")            
     
     @commands.command(description = "Removes x amount of messages from the channel.")
