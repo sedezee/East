@@ -1,12 +1,10 @@
 import discord
 import random
-import DiscordUtils as dutils
 from discord.ext import commands
 import datetime
 import typing
-import json
-import time_zone
-
+from EastSql import AdminRow, OptionsRow
+import sedezcompendium.discordtools as dutils
 
 def east_color(role):
     return role.name.startswith("<East Color")
@@ -17,19 +15,19 @@ def talos_color(role):
 
 
 def unused_role(ctx, role):
-    return (not len(role.members) or (len(role.members) and ctx.author == role.members[0]))
+    return not len(role.members) or (len(role.members) and ctx.author == role.members[0])
 
 
 def floating_role(role):
     return not len(role.members)
 
 
-def command_null_check(self, ctx, command, embed, help=False):
-    if command.description != None and command.help != None and help:
-        embed.description = (command.description).replace("&", ctx.prefix)
-        embed.add_field(name=command, value=(command.help).replace("&", ctx.prefix), inline=False)
-    elif command.description != None and not help:
-        embed.add_field(name=command, value=(command.description).replace("&", ctx.prefix), inline=False)
+def command_null_check(self, ctx, command, embed, help_wanted =False):
+    if command.description is not None and command.help is not None and help_wanted:
+        embed.description = command.description.replace("&", ctx.prefix)
+        embed.add_field(name=command, value=command.help.replace("&", ctx.prefix), inline=False)
+    elif command.description is not None and not help_wanted:
+        embed.add_field(name=command, value=command.description.replace("&", ctx.prefix), inline=False)
     else:
         embed.add_field(name=command, value="", inline=False)
 
@@ -80,7 +78,7 @@ class Commands(commands.Cog):
         await ctx.send("Color added!")
 
     @color.command(name="remove", description="Remove your color roles.")
-    async def _remove(self, ctx):
+    async def clr_remove(self, ctx):
         """Removes all of the color roles you may have that are from either East or Talos."""
         for role in ctx.author.roles:
             if east_color(role) or talos_color(role):
@@ -91,8 +89,11 @@ class Commands(commands.Cog):
         await ctx.send("Color roles removed.")
 
     @color.command(name="clear", description="Removes all unused color roles from the server.")
-    async def _clear(self, ctx):
-        """Clears all roles from the server. A backup command in case East fails to clear the role correctly upon removal."""
+    async def clr_clear(self, ctx):
+        """
+        Clears all roles from the server.
+        A backup command in case East fails to clear the role correctly upon removal.
+        """
         for role in ctx.guild.roles:
             if floating_role(role):
                 await role.delete()
@@ -102,20 +103,17 @@ class Commands(commands.Cog):
     @commands.command(description="Returns the time for the set timezone.")
     async def time(self, ctx, selected_zone=None):
         """Returns the time for the current timezone, which can be set in timezones. Used with ``&time``"""
-        if selected_zone is None or not isinstance(dutils.to_time_zone(selected_zone.upper()), time_zone.TimeZone):
-            if selected_zone is not None: 
-                await ctx.send("Sorry, that time zone could not be found, so I'll be proceeding with the default for your server!")
-            self.bot.db.execute("""
-            SELECT time_zone FROM east_schema.options
-            WHERE guild_id = %s""",
-                (str(ctx.guild.id),))
-            selected_zone = self.bot.db.fetchone()[0]
+        timezone_db = self.bot.database.get_item(OptionsRow, guild_id=f"'{ctx.guild.id}'")
 
-        self.bot.db.execute("""
-        SELECT military_time FROM east_schema.options
-        WHERE guild_id = %s""",
-            (str(ctx.guild.id),))
-        military_time = self.bot.db.fetchone()[0]
+        try:
+            selected_zone = dutils.timezone.TimeZone(selected_zone)
+        except (ValueError, TypeError) as e:
+            if isinstance(e, ValueError):
+                await ctx.send("Sorry, that time zone could not be found, so I'll be proceeding with the default for your server!")
+            selected_zone = getattr(timezone_db, "time_zone")
+            selected_zone = dutils.timezone.TimeZone(selected_zone)
+
+        military_time = getattr(timezone_db, "military_time")
 
         time_list = dutils.get_time(selected_zone, military_time, True)
 
@@ -125,25 +123,31 @@ class Commands(commands.Cog):
         await ctx.send(f"The time is {time_list[0]}:{time_list[1]}:{time_list[2]}!")
 
     @commands.command(description="Gives the time to a certain date.")
-    async def timeUntil(self, ctx, unit="days", month=0, day=0, year=0):
-        """Returns the time until a specific date. Format to trigger is ``&unit month day year``. Unit may be represented as days, or weeks. Months and years are not currently supported."""
+    async def timeUntil(self, ctx, unit="days", month=None, day=None, year=None):
+        """
+        Returns the time until a specific date.
+        Format to trigger is ``&unit month day year``. Unit may be represented as days, or weeks.
+        Months and years are not currently supported.
+        """
+        # TODO: modify so no unit is needed
         current_date = datetime.datetime.now()
-        to_date = datetime.datetime(year=year, month=month, day=(day + 1))
+        if month is None or day is None or year is None:
+            month = 5
+            day = 25
+            year = 2020
+        day = int(day) 
+        to_date = datetime.datetime(year=int(year), month=int(month), day=(day+1))
+        
         time_delta = to_date - current_date
 
-        day_string = "days"
-        week_string = "weeks"
+        day_string = "days" if time_delta.days != 1 else "day"
         weeks = int(time_delta.days / 7)
+        week_string = "weeks" if weeks != 1 else "week"
         days = time_delta.days % 7
 
-        if not month or not day or not year:
-            await ctx.send("Please enter a valid date format: ``dd mm yyyy``.")
-        elif time_delta.days == 0:
+        if time_delta.days == 0:
             await ctx.send("That's today!")
         elif unit == "days":
-            if abs(time_delta.days) == 1:
-                day_string = "day"
-
             if time_delta.days < 0:
                 await ctx.send(f"{abs(time_delta.days)} {day_string} since {month}-{day}-{year}.")
             else:
@@ -154,12 +158,8 @@ class Commands(commands.Cog):
             if abs(days) == 1:
                 day_string = "day"
 
-            if abs(weeks) == 1:
-                week_string = "week"
-
             if time_delta.days < 0:
-                await ctx.send(
-                    f"It has been {weeks} {week_string} and {days} {day_string} since {month}-{day}-{year}.  ")
+                await ctx.send(f"It has been {weeks} {week_string} and {days} {day_string} since {month}-{day}-{year}.  ")
             else:
                 await ctx.send(f"You have {weeks} {week_string} and {days} {day_string} until {month}-{day}-{year}.")
 
@@ -169,7 +169,7 @@ class Commands(commands.Cog):
         weekly_wage = wage * hours_working
         weeks_to_earn = days_to_earn / 7
         amount_earned = weekly_wage * weeks_to_earn
-        if (amount_earned < amount_wanted):
+        if amount_earned < amount_wanted:
             await ctx.send(f"You're fucked! \nWW: {weekly_wage}\nWTE: {weeks_to_earn}\nAE: {amount_earned}")
         else:
             await ctx.send(
@@ -178,4 +178,4 @@ class Commands(commands.Cog):
 
 def setup(bot):
     # bot.remove_command("help")
-    bot.add_cog(Commands(bot))  
+    bot.add_cog(Commands(bot))

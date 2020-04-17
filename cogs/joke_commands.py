@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import asyncio
 
+
 class JokeCommands(commands.Cog):
     """These commands are just for fun. Once the main purpose of East, now only a few favorites remain."""
 
@@ -32,6 +33,7 @@ class JokeCommands(commands.Cog):
                 await ctx.send("I hope you're doing well!")
         else: 
             await ctx.send(f"Hello {ctx.author.name}!")
+
 
 def setup(bot):
     bot.add_cog(JokeCommands(bot))
