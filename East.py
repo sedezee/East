@@ -1,5 +1,5 @@
 import sys
-sys.path.append('C:\\Dev\\SedezCompendium')
+sys.path.append('C:\\Dev\\python\\SedezCompendium')
 
 import sedezcompendium.discordtools as dtutils
 import discord
@@ -22,12 +22,6 @@ class East (discord.ext.commands.Bot):
     SPLIT_CHAR = ','
     LOAD_COGS = ['commands', 'dev_commands', 'admin_commands', 'joke_commands']
     DEV_IDS = [199856712860041216, 101091070904897536]
-    OPTIONS_LIST = {
-        "show_admins" : bool, 
-        "time_zone" : dtutils.timezone.TimeZone,
-        "military_time" : bool,
-        "prefix" :   str
-    }
 
     # BOT LOGS
     async def on_ready(self): 
@@ -37,13 +31,14 @@ class East (discord.ext.commands.Bot):
         print('-----')
     
     async def on_guild_join(self, guild):
-        opt_row = sql.OptionsRow(f"'{guild.id}'", True, "UTC", False, "&", 100)
+        opt_row = sql.OptionsRow(f"'{guild.id}'", True, "'UTC'", False, "'&'", 100, "MM/DD/YY", False, False)
         self.database.insert_item(opt_row)
 
     async def on_guild_remove(self, guild):
-        self.database.remove_item(sql.OptionsRow, guild_id = f"'{guild.id}'")
-        self.database.remove_item(sql.AdminRow, guild_id = f"'{guild.id}'")
-    
+        #TODO: add the rest
+        self.database.remove_rows(sql.OptionsRow, guild_id = f"'{guild.id}'")
+        self.database.remove_rows(sql.AdminRow, guild_id = f"'{guild.id}'")
+
     async def process_commands(self, message): 
         if message.author.bot and not (message.author.id == 199965612691292160):
             return
@@ -54,10 +49,9 @@ class East (discord.ext.commands.Bot):
 
 def get_prefix(self, ctx):
     options_row = self.database.get_item(sql.OptionsRow, guild_id = f"'{ctx.guild.id}'")
-    prefix = getattr(options_row, "prefix")
-    if prefix is not None:
-        return prefix
-    else:
+    try:
+        return getattr(options_row, "prefix")
+    except AttributeError:
         return "&"
 
 
